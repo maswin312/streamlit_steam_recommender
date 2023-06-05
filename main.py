@@ -26,27 +26,57 @@ st.image(game_id["header_image"].iloc[0], caption=game_id["short_description"].i
 
 st.header("You might like :")
 
-api_url = (
-    "https://games-recommender-uvicorn-app-app-reload.onrender.com/predict/{}".format(
-        game_id["game_id"].iloc[0]
-    )
-)
-response = requests.get(api_url)
+API_URL = "https://games-recommender-uvicorn-app-app-reload.onrender.com/predict/{}"
 
-if response.status_code == 200:
-    data = response.json
-    st.write("success: {}".format(response.status_code))
-    # recommended_games2 = pd.DataFrame(data)
-    # Proceed with parsing the data
-else:
-    # Handle the error if the request was unsuccessful
-    st.write("Error: {}".format(response.status_code))
+response = requests.get(API_URL)
 
-# recommended_games2
-recommended_games = similar_item[
-    similar_item["src_game_id"] == game_id["game_id"].iloc[0]
-]
 
+def check_api_status(game_id):
+    try:
+        response = requests.get(
+            API_URL.format(game_id)
+        )  # Change the variable to the desired value
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except requests.exceptions.RequestException:
+        return False
+
+
+def fetch_data(game_id):
+    response = requests.get(
+        API_URL.format(game_id)
+    )  # Change the variable to the desired value
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+
+def similar_games(game_id):
+    # Check API status
+    api_up = check_api_status(game_id)
+
+    if api_up:
+        data = fetch_data(game_id)
+
+        if data:
+            # Transform data into dataframe
+            df = pd.DataFrame(data)
+
+            return df
+        else:
+            st.error("Failed to fetch data from API")
+    else:
+        st.warning("API is down. Please wait for 30 seconds and reload the app.")
+
+
+# recommended_games = similar_item[
+#     similar_item["src_game_id"] == game_id["game_id"].iloc[0]
+# ]
+
+recommended_games = similar_games(game_id["game_id"].iloc[0])
 
 # recommended_games
 col1, col2, col3 = st.columns(3)
